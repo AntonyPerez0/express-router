@@ -1,53 +1,42 @@
 const express = require("express");
 const router = express.Router();
+const { check, validationResult } = require("express-validator");
 
-const { Fruit } = require("../models");
+let fruits = [];
 
-router.get("/fruits", (req, res) => {
-  Fruit.findAll().then((fruits) => {
-    res.json(fruits);
-  });
-});
-
-router.get("/fruits/:id", (req, res) => {
-  Fruit.findByPk(req.params.id).then((fruit) => {
-    if (fruit) {
-      res.json(fruit);
-    } else {
-      res.status(404).send("Fruit not found");
+router.post(
+  "/fruits",
+  [check("color").not().isEmpty().trim().withMessage("Color is required")],
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.json({ error: errors.array() });
     }
-  });
-});
 
-router.post("/fruits", (req, res) => {
-  Fruit.create({
-    name: req.body.name,
-    color: req.body.color,
-  }).then((fruit) => {
-    res.json(fruit);
-  });
-});
-
-router.put("/fruits/:id", (req, res) => {
-  Fruit.update(
-    {
+    const newFruit = {
+      id: fruits.length + 1,
       name: req.body.name,
       color: req.body.color,
-    },
-    {
-      where: { id: req.params.id },
-    }
-  ).then(() => {
+    };
+    fruits.push(newFruit);
+    res.json(fruits);
+  }
+);
+
+router.put("/fruits/:id", (req, res) => {
+  const fruit = fruits.find((f) => f.id === parseInt(req.params.id));
+  if (fruit) {
+    fruit.name = req.body.name;
+    fruit.color = req.body.color;
     res.send("Fruit updated");
-  });
+  } else {
+    res.status(404).send("Fruit not found");
+  }
 });
 
 router.delete("/fruits/:id", (req, res) => {
-  Fruit.destroy({
-    where: { id: req.params.id },
-  }).then(() => {
-    res.send("Fruit deleted");
-  });
+  fruits = fruits.filter((f) => f.id !== parseInt(req.params.id));
+  res.send("Fruit deleted");
 });
 
 module.exports = router;
